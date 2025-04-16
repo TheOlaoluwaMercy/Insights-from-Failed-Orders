@@ -79,7 +79,28 @@ GROUP BY
   ```
 </details>
 
+### Focusing on orders cancelled by clients
+The rest of the analysis narrows down to orders that were cancelled by client. For ease of accessing this subset of the data, a VIEW called orders_client_cancelled was created. 
 
+<details>
+  <summary>View Code</summary>
+  
+  ```sql
+SELECT 
+    CASE    
+        WHEN order_status_key = 4 THEN 'cancelled by client'
+        WHEN order_status_key = 9 THEN 'cancelled by system'
+    END AS order_status,
+	ROUND(COUNT(*) * 100.0 / (SELECT COUNT(*) FROM orders), 1) AS percentage_of_total
+FROM orders
+GROUP BY 
+    CASE    
+        WHEN order_status_key = 4 THEN 'cancelled by client'
+        WHEN order_status_key = 9 THEN 'cancelled by system'
+    END;
+  ```
+</details>
+etyk'l
 
 
 
