@@ -92,7 +92,7 @@ WHERE order_status_key = 4;
   ```
 </details>
 
-###  When Do Client-Cancelled Orders Happen?
+###  When Do Client-Cancelled Failed Orders Happen?
 Evenings recorded the highest proportion of failed orders at 31.3%, while afternoons had the lowest at 17.3%. The hourly trend chart showed noticeable spikes at 8:00 AM, 5:00 PM, 9:00 PM, 10:00 PM, and 11:00 PM — key hours when people are commuting to work or school in the morning, and returning home, attending social events, or heading out for the night in the evening.
 
 What hour of the day has the highest client cancellations?
@@ -136,6 +136,92 @@ GROUP BY CASE WHEN DATEPART(HOUR, order_time) BETWEEN 5 AND 11 THEN 'Morning'
 		 END;
   ```
 </details>
+
+### Where Do Client-Cancelled Failed Orders Occur?
+> Out of 10,716 failed orders, there were over 4,000 unique coordinates. These were grouped into 125 distinct location clusters through coordinate rounding and spatial grouping. Reverse geocoding was then applied to extract meaningful location details such as address, district, suburb, and city.
+
+Which addresses have the most client-cancelled orders?
+The top 5 addresses clusters where failed orders originates from are: 
+| Address                                                                | Failed Orders |
+|------------------------------------------------------------------------|---------------|
+| Reading Railway Station Car Park, Trooper Potts Way, Reading          | 950           |
+| 86 Southampton Street, Reading                                         | 814           |
+| 98 Blenheim Road, Reading                                              | 652           |
+| University of Reading, London Road Campus, Acacia Road, Reading       | 578           |
+| 259 Chancellors Building, Chancellors Way, Reading                    | 423           |
+
+<details>
+  <summary>View Code</summary>
+  
+  ```sql
+SELECT 
+    CAST(location.Adress AS NVARCHAR(MAX)) AS Adress,
+    COUNT(*) AS failed_orders
+FROM orders_client_cancelled
+LEFT JOIN location
+    ON ROUND(orders_client_cancelled.origin_latitude, 2) = location.latitude 
+    AND ROUND(orders_client_cancelled.origin_longitude, 2) = location.longitude
+GROUP BY CAST(location.Adress AS NVARCHAR(MAX))
+ORDER BY COUNT(*) DESC;
+  ```
+</details>
+
+Which city has the highest number of failed orders?
+> **Reading**  recorded the highest number(96%) of failed orders
+
+| City                  | Failed Orders |
+|-----------------------|---------------|
+| Reading               | 7048          |
+| Shinfield             | 63            |
+| Woodley               | 49            |
+| Sindlesham            | 28            |
+| Holybrook             | 24            |
+| Sonning               | 21            |
+| Mapledurham           | 14            |
+| Purley on Thames      | 13            |
+| South Oxfordshire     | 13            |
+| Three Mile Cross      | 11            |
+| Burghfield            | 7             |
+| Tilehurst             | 5             |
+| Theale                | 4             |
+| Eye and Dunsden       | 4             |
+| Winnersh              | 1             |
+| St. Nicholas, Hurst   | 1             |
+| Charvil               | 1             |
+
+<details>
+  <summary>View Code</summary>
+  
+  ```sql
+SELECT 
+	CAST(location.city AS NVARCHAR(MAX)) AS city,
+    COUNT(*) AS failed_orders
+FROM orders_client_cancelled
+LEFT JOIN location
+    ON ROUND(orders_client_cancelled.origin_latitude, 2) = location.latitude 
+    AND ROUND(orders_client_cancelled.origin_longitude, 2) = location.longitude
+GROUP BY CAST(location.city AS NVARCHAR(MAX)) 
+ORDER BY COUNT(*) DESC;
+  ```
+</details>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
