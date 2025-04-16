@@ -1,5 +1,13 @@
 # Insights-from-Failed-Orders
-This project involves the analysis and exploration of failed orders of a taxi hailing company, with a specific focus on understanding orders cancelled by the client (excluding those cancelled by the system). The goal is to uncover what, when, and where these cancellations are happening.
+This project involves the analysis and exploration of failed orders of a taxi-hailing company, with a specific focus on understanding orders cancelled by the client (excluding those cancelled by the system). The goal is to uncover what, when, and where these cancellations are happening.
+## Tools & Concepts Used
+- SQL
+- SQL SERVER
+- Microsoft Excel (Visualization)
+- Aggregations
+- Joins
+- Subqueries
+
 ## The following questions would be answered:
 1. Understanding Failed Orders
     - How many total failed orders occurred?
