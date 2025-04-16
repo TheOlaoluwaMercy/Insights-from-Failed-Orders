@@ -205,14 +205,168 @@ ORDER BY COUNT(*) DESC;
   ```
 </details>
 
+###  How Does Time Influence Cancellations?
+What is the maximum, minimum and average ETA (Estimated Time of Arrival in minutes)?
+
+| max_eta | min_eta | avg_eta |
+|---------|---------|---------|
+| 25.98   | 1       | 7.35    |
+
+<details>
+  <summary>View Code</summary>
+  
+  ```sql
+SELECT 
+	ROUND( CAST(MAX(m_order_eta) AS FLOAT)/60, 2) AS max_eta,
+	ROUND( CAST( MIN(m_order_eta) AS FLOAT)/60, 2) AS min_eta,
+	ROUND( CAST( AVG(m_order_eta) AS FLOAT) /60, 2) AS avg_eta
+FROM orders_client_cancelled
+  ```
+</details>
 
 
+Failed orders by ETA group
+
+| ETA          | Failed Orders |
+|--------------|---------------|
+| NULL         | 4496          |
+| 0 - 10 min   | 2091          |
+| 11 - 20 min  | 708           |
+| 21 - 30 min  | 12            |
+
+<details>
+  <summary>View Code</summary>
+  
+  ```sql
+SELECT CASE
+			WHEN m_order_eta BETWEEN 0 AND 600 THEN '0 - 10 min'
+			WHEN m_order_eta BETWEEN 601 AND 1200 THEN '11 - 20 min'
+			WHEN m_order_eta BETWEEN 1201 AND 1800 THEN '21 - 30 min'
+			END AS ETA,
+		COUNT(*) AS failed_orders
+FROM orders_client_cancelled
+GROUP BY CASE
+			WHEN m_order_eta BETWEEN 0 AND 600 THEN '0 - 10 min'
+			WHEN m_order_eta BETWEEN 601 AND 1200 THEN '11 - 20 min'
+			WHEN m_order_eta BETWEEN 1201 AND 1800 THEN '21 - 30 min'
+			END
+ORDER BY CASE
+			WHEN m_order_eta BETWEEN 0 AND 600 THEN '0 - 10 min'
+			WHEN m_order_eta BETWEEN 601 AND 1200 THEN '11 - 20 min'
+			WHEN m_order_eta BETWEEN 1201 AND 1800 THEN '21 - 30 min'
+			END;
+  ```
+</details>
 
 
+How long (min) before the client cancels the order?
+
+| max_cancellation_time | min_cancellation_time | AVG_cancellation_time |
+|-----------------------|-----------------------|-----------------------|
+| 71.72                 | 0.05                  | 2.62                  |
 
 
+<details>
+  <summary>View Code</summary>
+  
+  ```sql
+SELECT ROUND(CAST(MAX(cancellations_time_in_seconds) AS FLOAT)/60, 2) AS max_cancellation_time,
+	   ROUND(CAST(MIN(cancellations_time_in_seconds) AS FLOAT)/60,2) AS min_cancellation_time,
+	   ROUND(CAST(AVG(cancellations_time_in_seconds) AS FLOAT)/60,2) AS AVG_cancellation_time
+FROM orders_client_cancelled;
+  ```
+</details>
+
+Failed Orders by cancellation time group
+
+| Cancellation Time  | Failed Orders |
+|--------------------|---------------|
+| NULL               | 9             |
+| 0 - 25 min         | 7005          |
+| 26 - 50 min        | 264           |
+| 51 - 75 min        | 29            |
+
+<details>
+  <summary>View Code</summary>
+  
+  ```sql
+SELECT CASE
+			WHEN cancellations_time_in_seconds BETWEEN 0 AND 600 THEN '0 - 25 min'
+			WHEN cancellations_time_in_seconds BETWEEN 601 AND 1200 THEN '26 - 50 min'
+			WHEN cancellations_time_in_seconds BETWEEN 1201 AND 1800 THEN '51 - 75 min'
+			END AS cancellation_time,
+		COUNT(*) AS failed_orders
+FROM orders_client_cancelled
+GROUP BY CASE
+			WHEN cancellations_time_in_seconds BETWEEN 0 AND 600 THEN '0 - 25 min'
+			WHEN cancellations_time_in_seconds BETWEEN 601 AND 1200 THEN '26 - 50 min'
+			WHEN cancellations_time_in_seconds BETWEEN 1201 AND 1800 THEN '51 - 75 min'
+			END
+ORDER BY CASE
+			WHEN cancellations_time_in_seconds BETWEEN 0 AND 600 THEN '0 - 25 min'
+			WHEN cancellations_time_in_seconds BETWEEN 601 AND 1200 THEN '26 - 50 min'
+			WHEN cancellations_time_in_seconds BETWEEN 1201 AND 1800 THEN '51 - 75 min'
+			END;
+  ```
+</details>
+
+Do clients tend to cancel before a driver is assigned or after?
 
 
+![driverassigned](https://github.com/user-attachments/assets/11239d30-cb32-4f60-b8d1-ef129d0ec8c0)
+
+   <details>
+  <summary>View Code</summary>
+  
+  ```sql
+SELECT 
+	CASE WHEN is_driver_assigned_key = 1 THEN 'Yes'
+		 WHEN is_driver_assigned_key = 0 THEN 'No'
+	END as driver_assigned, 
+	COUNT(*) as failed_count
+FROM orders_client_cancelled
+GROUP BY is_driver_assigned_key
+  ```
+</details>
+
+How does driver asssignment affects cancelation time? 
+
+On average, clients who cancel with a driver assigned tend to wait longer before canceling than those without a driver assigned. 
+
+| Driver Assigned | Max Cancellation Time | Min Cancellation Time | AVG Cancellation Time |
+|-----------------|-----------------------|-----------------------|-----------------------|
+| NO              | 68.28                 | 0.05                  | 1.83                  |
+| YES             | 71.72                 | 0.1                   | 3.88                  |
+
+   <details>
+  <summary>View Code</summary>
+  
+  ```sql
+SELECT 
+	CASE WHEN is_driver_assigned_key = 1 THEN 'YES'
+		 WHEN is_driver_assigned_key = 0 THEN 'NO' END AS driver_assigned,
+	   ROUND(CAST(MAX(cancellations_time_in_seconds) AS FLOAT)/60, 2) AS max_cancellation_time,
+	   ROUND(CAST(MIN(cancellations_time_in_seconds) AS FLOAT)/60,2) AS min_cancellation_time,
+	   ROUND(CAST(AVG(cancellations_time_in_seconds) AS FLOAT)/60,2) AS AVG_cancellation_time
+FROM orders_client_cancelled
+GROUP BY is_driver_assigned_key;
+  ```
+</details>
+
+## Recommendation
+1. **Determine Reasons for Order Cancellations**
+Conduct hypothesis testing using a more comprehensive dataset, including both successful and failed orders, to identify key factors that significantly affect order success or failure. Examples of such factors include ETA, time before driver assignment, and others. Old data could be sampled, or A/B testing could be carried out to assess different strategies for improving order success.
+2. **Client Surveys After Cancellations**
+Survey clients who cancel their orders to better understand the reasons behind the cancellations. This feedback will help identify issues that can be addressed on the company's end, improving the overall order success rate. Focus on common cancellation reasons and work on resolving them to enhance the customer experience and retention.
+3. **Optimizing Driver Availability and Resource Allocation in High-Demand Areas**
+Implement a system to improve driver availability in high-demand areas by analyzing order volume trends and developing an algorithm to match order volumes with driver availability, predicting areas that may need more drivers based on projected demand. Drivers can be notified about projected spikes in these areas, allowing for better resource allocation.
+
+## Data Limitations
+1. **Lack of Comprehensive Dataset**
+The analysis was limited to failed orders, and the dataset did not include successful orders. A more comprehensive dataset, including both successful and failed orders, is needed for a thorough analysis and to test hypotheses effectively.
+
+2. **Absence of Driver Assignment Data**
+Data regarding the time it takes to assign drivers to orders is not available. This information is crucial for understanding how delays in driver assignments impact order cancellations.
 
 
 
