@@ -1,5 +1,5 @@
 # Insights-from-Failed-Orders
-This project involves the analysis and exploration of failed orders, with a specific focus on understanding orders cancelled by the client (excluding those cancelled by the system). The goal is to uncover what, when, and where these cancellations are happening.
+This project involves the analysis and exploration of failed orders of a taxi hailing company, with a specific focus on understanding orders cancelled by the client (excluding those cancelled by the system). The goal is to uncover what, when, and where these cancellations are happening.
 ## The following questions would be answered:
 1. Understanding Failed Orders
     - How many total failed orders occurred?
@@ -86,24 +86,56 @@ The rest of the analysis narrows down to orders that were cancelled by client. F
   <summary>View Code</summary>
   
   ```sql
-SELECT 
-    CASE    
-        WHEN order_status_key = 4 THEN 'cancelled by client'
-        WHEN order_status_key = 9 THEN 'cancelled by system'
-    END AS order_status,
-	ROUND(COUNT(*) * 100.0 / (SELECT COUNT(*) FROM orders), 1) AS percentage_of_total
+CREATE VIEW orders_client_cancelled AS SELECT *
 FROM orders
-GROUP BY 
-    CASE    
-        WHEN order_status_key = 4 THEN 'cancelled by client'
-        WHEN order_status_key = 9 THEN 'cancelled by system'
-    END;
+WHERE order_status_key = 4;
   ```
 </details>
-etyk'l
+
+###  When Do Client-Cancelled Orders Happen?
+Evenings recorded the highest proportion of failed orders at 31.3%, while afternoons had the lowest at 17.3%. The hourly trend chart showed noticeable spikes at 8:00 AM, 5:00 PM, 9:00 PM, 10:00 PM, and 11:00 PM — key hours when people are commuting to work or school in the morning, and returning home, attending social events, or heading out for the night in the evening.
+
+What hour of the day has the highest client cancellations?
 
 
+![hourly trend](https://github.com/user-attachments/assets/147072b3-6b9b-4f5c-a771-2dbf06d17b2a)
 
+<details>
+  <summary>View Code</summary>
+  
+  ```sql
+SELECT 
+	DATEPART(HOUR, order_time) AS order_hour,
+	COUNT(*) AS failed_orders
+FROM orders_client_cancelled
+GROUP BY DATEPART(HOUR, order_time)
+ORDER BY DATEPART(HOUR, order_time);
+  ```
+</details>
+How do cancellations vary across parts of the day (morning, afternoon, evening, night)?
+
+![timeofday](https://github.com/user-attachments/assets/67ffdcdc-ac58-4bdd-92ca-7d5ed68bc938)
+
+
+<details>
+  <summary>View Code</summary>
+  
+  ```sql
+SELECT 
+	CASE WHEN DATEPART(HOUR, order_time) BETWEEN 5 AND 11 THEN 'Morning'
+		 WHEN DATEPART(HOUR, order_time) BETWEEN 12 AND 16 THEN 'Afternoon'
+		 WHEN DATEPART(HOUR, order_time) BETWEEN 17 AND 22 THEN 'Evening'
+		 ELSE 'Night'
+		 END AS 'time_of_day',
+	COUNT(*) AS failed_orders
+FROM orders_client_cancelled
+GROUP BY CASE WHEN DATEPART(HOUR, order_time) BETWEEN 5 AND 11 THEN 'Morning'
+		 WHEN DATEPART(HOUR, order_time) BETWEEN 12 AND 16 THEN 'Afternoon'
+		 WHEN DATEPART(HOUR, order_time) BETWEEN 17 AND 22 THEN 'Evening'
+		 ELSE 'Night'
+		 END;
+  ```
+</details>
 
 
 
